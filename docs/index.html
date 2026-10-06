@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>東華在學與休學</title>
+<style>
+:root {
+  --bg: #f4f2ee;
+  --card: #ffffff;
+  --ink: #1f2328;
+  --muted: #6a6f76;
+  --line: #e2ded6;
+  --accent: #1f6f78;
+  --accent-soft: #e3f0f0;
+  --warn-bg: #fff4d6;
+  --warn-ink: #7a5600;
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15171a;
+    --card: #1e2125;
+    --ink: #e8e6e1;
+    --muted: #9aa0a6;
+    --line: #33373d;
+    --accent: #5fb3bb;
+    --accent-soft: #23383a;
+    --warn-bg: #3a3018;
+    --warn-ink: #f0d58a;
+    --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15171a; --card: #1e2125; --ink: #e8e6e1; --muted: #9aa0a6; --line: #33373d;
+  --accent: #5fb3bb; --accent-soft: #23383a; --warn-bg: #3a3018; --warn-ink: #f0d58a; --shadow: none;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 40px; }
+header h1 { margin: 0 0 4px; font-size: 24px; letter-spacing: .02em; }
+header p { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
+
+.banner {
+  display: none; margin-bottom: 14px; padding: 10px 14px; border-radius: 8px;
+  background: var(--warn-bg); color: var(--warn-ink); font-size: 14px;
+}
+.banner.show { display: block; }
+
+/* 篩選列 */
+.filters {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: flex-end;
+  padding: 14px 16px; margin: 0 -16px 18px;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--line);
+}
+.f { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.f > label, .f > .lbl { font-size: 12px; color: var(--muted); font-weight: 600; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--card); }
+.seg button {
+  border: 0; background: transparent; color: var(--ink); padding: 6px 12px; font: inherit; font-size: 14px; cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+
+.ms { position: relative; }
+.ms > button {
+  min-width: 150px; max-width: 260px; text-align: left; padding: 6px 30px 6px 10px; font: inherit; font-size: 14px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative;
+}
+.ms > button::after { content: "▾"; position: absolute; right: 10px; top: 6px; color: var(--muted); }
+.ms .panel {
+  display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 30;
+  width: max-content; min-width: 220px; max-width: min(380px, calc(100vw - 32px)); max-height: 340px; overflow: auto;
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.15); padding: 6px;
+}
+.ms.open .panel { display: block; }
+.ms .panel label { display: flex; gap: 8px; align-items: flex-start; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.ms .panel label:hover { background: var(--accent-soft); }
+.ms .panel input { margin-top: 4px; accent-color: var(--accent); }
+.ms .panel .tools { display: flex; justify-content: space-between; padding: 4px 8px 6px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.ms .panel .tools button { border: 0; background: none; color: var(--accent); cursor: pointer; font: inherit; font-size: 13px; padding: 0; }
+.ms .panel .empty { padding: 8px; color: var(--muted); font-size: 13px; }
+
+.chk { display: inline-flex; gap: 10px; padding: 5px 0; }
+.chk label { display: inline-flex; gap: 4px; align-items: center; font-size: 14px; cursor: pointer; }
+.chk input { accent-color: var(--accent); }
+
+.range { width: 220px; }
+.range .val { font-size: 14px; font-variant-numeric: tabular-nums; }
+.dual { position: relative; height: 24px; }
+.dual .track { position: absolute; left: 0; right: 0; top: 10px; height: 4px; border-radius: 2px; background: var(--line); }
+.dual .fill { position: absolute; top: 10px; height: 4px; border-radius: 2px; background: var(--accent); }
+.dual input {
+  position: absolute; left: 0; top: 0; width: 100%; height: 24px; margin: 0;
+  background: none; pointer-events: none; -webkit-appearance: none; appearance: none;
+}
+.dual input::-webkit-slider-thumb {
+  -webkit-appearance: none; pointer-events: auto; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--card); border: 2px solid var(--accent); cursor: grab;
+}
+.dual input::-moz-range-thumb {
+  pointer-events: auto; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--card); border: 2px solid var(--accent); cursor: grab;
+}
+.dual input::-moz-range-track { background: none; }
+
+/* 卡片 */
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow);
+  padding: 16px 16px 12px; display: flex; flex-direction: column; min-width: 0;
+}
+.card.wide { grid-column: 1 / -1; }
+.card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.card h2 { margin: 0; font-size: 17px; }
+.card .sub { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+.toggle .seg button { padding: 4px 10px; font-size: 13px; }
+.chart-box { position: relative; margin-top: 8px; }
+.chart { width: 100%; height: 340px; }
+.nodata {
+  display: none; position: absolute; inset: 0; align-items: center; justify-content: center;
+  color: var(--muted); font-size: 14px; background: var(--card);
+}
+.nodata.show { display: flex; }
+.note { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+
+footer { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+footer a { color: var(--accent); }
+
+@media (max-width: 760px) {
+  .grid { grid-template-columns: 1fr; }
+  .filters { position: static; }
+  .range { width: 100%; }
+  .f { flex: 1 1 100%; }
+  .ms > button { max-width: none; width: 100%; }
+  .chart { height: 300px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>國立東華大學 在學與休學人數</h1>
+    <p>111-1 至 114-1，共 7 個學期。改任何一個篩選條件，下方四張圖會同步更新。</p>
+  </header>
+
+  <div class="banner" id="banner"></div>
+
+  <section class="filters" aria-label="篩選條件">
+    <div class="f"><span class="lbl">學院</span><div class="ms" id="fCollege"></div></div>
+    <div class="f"><span class="lbl">系所</span><div class="ms" id="fDept"></div></div>
+    <div class="f"><span class="lbl">學位別</span><div class="chk" id="fDegree"></div></div>
+    <div class="f"><span class="lbl">性別</span><div class="seg" id="fGender"></div></div>
+    <div class="f range">
+      <span class="lbl">學期區間：<span class="val" id="semVal"></span></span>
+      <div class="dual">
+        <div class="track"></div><div class="fill" id="semFill"></div>
+        <input type="range" id="semLo" aria-label="起始學期">
+        <input type="range" id="semHi" aria-label="結束學期">
+      </div>
+    </div>
+    <div class="f"><span class="lbl">顯示方式</span><div class="seg" id="fMode"></div></div>
+    <div class="f"><span class="lbl">休學人數指標</span><div class="seg" id="fMetric"></div></div>
+  </section>
+
+  <main class="grid">
+    <article class="card">
+      <div class="card-head">
+        <div><h2>學生人數消長</h2><p class="sub">各學期在學人數</p></div>
+        <div class="toggle" data-card="enr"></div>
+      </div>
+      <div class="chart-box"><div class="chart" id="cEnr"></div><div class="nodata">目前的篩選條件沒有資料</div></div>
+    </article>
+
+    <article class="card">
+      <div class="card-head">
+        <div><h2>休學人數消長</h2><p class="sub" id="leaveSub"></p></div>
+        <div class="toggle" data-card="leave"></div>
+      </div>
+      <div class="chart-box"><div class="chart" id="cLeave"></div><div class="nodata">目前的篩選條件沒有資料</div></div>
+    </article>
+
+    <article class="card">
+      <div class="card-head">
+        <div><h2>休學原因分佈</h2><p class="sub" id="reasonSub"></p></div>
+        <div class="toggle" data-card="reason"></div>
+      </div>
+      <div class="chart-box"><div class="chart" id="cReason"></div><div class="nodata">目前的篩選條件沒有資料</div></div>
+      <p class="note" id="reasonNote"></p>
+    </article>
+
+    <article class="card wide">
+      <div class="card-head">
+        <div><h2>各系休學比例</h2><p class="sub">以系所為單位，由高到低排序</p></div>
+        <div class="toggle" data-card="ratio"></div>
+      </div>
+      <div class="chart-box"><div class="chart" id="cRatio"></div><div class="nodata">目前的篩選條件沒有資料</div></div>
+      <p class="note">休學比例＝所選學期區間的「學期間休學人數」加總 ÷ 同區間「在學人數」加總。不受「顯示方式」與「休學人數指標」影響。</p>
+    </article>
+  </main>
+
+  <footer>
+    資料來源：國立東華大學在學人數統計表、休學人數統計表（111-1 至 114-1）。
+    原始資料與整理後的 CSV 可在 <a href="https://github.com/Hannah-061/Han" target="_blank" rel="noopener">GitHub repo</a> 下載。
+    <span id="generated"></span>
+  </footer>
+</div>
+
+<script src="data.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+<script>
+(function () {
+  const banner = document.getElementById("banner");
+  const warn = (msg) => { banner.textContent = msg; banner.classList.add("show"); };
+
+  if (!window.BI_DATA) { warn("找不到資料檔 data.js，請確認它和 index.html 放在同一個資料夾。"); return; }
+  const D = window.BI_DATA;
+  const hasEcharts = typeof window.echarts !== "undefined";
+  if (!hasEcharts) warn("圖表元件（ECharts）載入失敗，請確認網路連線後重新整理頁面。");
+
+  const dims = D.dims;
+  const idx = (dim, v) => dims[dim].indexOf(v);
+  document.getElementById("generated").textContent = `資料產生時間：${D.generated}。`;
+
+  // ---------- 狀態 ----------
+  const S = {
+    colleges: new Set(),     // college 索引；空＝全部
+    depts: new Set(),        // dept 索引；空＝全部
+    degrees: new Set(dims.degree.map((_, i) => i)),
+    gender: -1,              // -1＝全部
+    lo: 0, hi: dims.semester.length - 1,
+    mode: "sum",             // sum | split
+    metric: "new",           // new | end
+    types: { enr: "line", leave: "line", reason: "pie", ratio: "bar" },
+  };
+  const deptCollege = dims.dept.map((d) => idx("college", (D.depts[d] || {}).college));
+
+  // ---------- 小工具 ----------
+  const fmt = (n) => n.toLocaleString("zh-TW");
+  const pct = (r) => (r * 100).toFixed(2) + "%";
+  function seg(el, options, get, set) {
+    el.innerHTML = "";
+    options.forEach(([val, text]) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.textContent = text;
+      b.addEventListener("click", () => { set(val); paint(); });
+      el.appendChild(b);
+    });
+    const paint = () => [...el.children].forEach((b, i) => b.setAttribute("aria-pressed", options[i][0] === get()));
+    paint();
+    return paint;
+  }
+
+  // ---------- 多選下拉 ----------
+  function multiSelect(root, { allText, unit, options, selected, onChange }) {
+    root.innerHTML = `<button type="button" aria-haspopup="true"></button><div class="panel" role="listbox"></div>`;
+    const btn = root.firstChild, panel = root.lastChild;
+    let opts = options();
+    const label = () => {
+      if (!selected.size) btn.textContent = allText;
+      else if (selected.size === 1) btn.textContent = opts.find((o) => selected.has(o.value))?.short ?? allText;
+      else btn.textContent = `已選 ${selected.size} ${unit}`;
+      btn.title = selected.size ? opts.filter((o) => selected.has(o.value)).map((o) => o.short).join("、") : allText;
+    };
+    const build = () => {
+      opts = options();
+      panel.innerHTML = "";
+      const tools = document.createElement("div");
+      tools.className = "tools";
+      tools.innerHTML = `<span style="font-size:12px;color:var(--muted)">沒選＝全部</span><button type="button">清除</button>`;
+      tools.querySelector("button").addEventListener("click", () => { selected.clear(); build(); onChange(); });
+      panel.appendChild(tools);
+      if (!opts.length) panel.insertAdjacentHTML("beforeend", `<div class="empty">沒有可選的項目</div>`);
+      opts.forEach((o) => {
+        const l = document.createElement("label");
+        const cb = document.createElement("input");
+        cb.type = "checkbox"; cb.checked = selected.has(o.value);
+        cb.addEventListener("change", () => { cb.checked ? selected.add(o.value) : selected.delete(o.value); label(); onChange(); });
+        l.append(cb, document.createTextNode(o.text));
+        panel.appendChild(l);
+      });
+      label();
+    };
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      document.querySelectorAll(".ms.open").forEach((m) => m !== root && m.classList.remove("open"));
+      root.classList.toggle("open");
+    });
+    panel.addEventListener("click", (e) => e.stopPropagation());
+    build();
+    return { rebuild: build };
+  }
+  document.addEventListener("click", () => document.querySelectorAll(".ms.open").forEach((m) => m.classList.remove("open")));
+
+  // ---------- 篩選列 ----------
+  const deptSelect = multiSelect(document.getElementById("fDept"), {
+    allText: "全部系所", unit: "個系所", selected: S.depts, onChange: update,
+    options: () => dims.dept
+      .map((d, i) => ({ d, i }))
+      .filter(({ i }) => !S.colleges.size || S.colleges.has(deptCollege[i]))
+      .sort((a, b) => deptCollege[a.i] - deptCollege[b.i] || a.d.localeCompare(b.d, "zh-Hant"))
+      .map(({ d, i }) => {
+        const al = (D.depts[d] || {}).aliases || [];
+        return { value: i, short: d, text: al.length ? `${d}（舊名：${al.join("、")}）` : d };
+      }),
+  });
+  multiSelect(document.getElementById("fCollege"), {
+    allText: "全部學院", unit: "個學院", selected: S.colleges,
+    options: () => dims.college.map((c, i) => ({ value: i, short: c, text: c })),
+    onChange: () => {
+      // 只保留已選學院底下的系所
+      if (S.colleges.size) [...S.depts].forEach((i) => { if (!S.colleges.has(deptCollege[i])) S.depts.delete(i); });
+      deptSelect.rebuild();
+      update();
+    },
+  });
+
+  const degEl = document.getElementById("fDegree");
+  dims.degree.forEach((g, i) => {
+    const l = document.createElement("label");
+    const cb = document.createElement("input");
+    cb.type = "checkbox"; cb.checked = true;
+    cb.addEventListener("change", () => {
+      if (!cb.checked && S.degrees.size === 1) { cb.checked = true; return; } // 至少保留一個
+      cb.checked ? S.degrees.add(i) : S.degrees.delete(i);
+      update();
+    });
+    l.append(cb, document.createTextNode(g));
+    degEl.appendChild(l);
+  });
+
+  seg(document.getElementById("fGender"), [[-1, "全部"], ...dims.gender.map((g, i) => [i, g])],
+    () => S.gender, (v) => { S.gender = v; update(); });
+  seg(document.getElementById("fMode"), [["sum", "合計"], ["split", "分開比較"]],
+    () => S.mode, (v) => { S.mode = v; update(); });
+  seg(document.getElementById("fMetric"), [["new", "學期間休學"], ["end", "學期底休學狀態"]],
+    () => S.metric, (v) => { S.metric = v; update(); });
+
+  const lo = document.getElementById("semLo"), hi = document.getElementById("semHi");
+  [lo, hi].forEach((el) => { el.min = 0; el.max = dims.semester.length - 1; el.step = 1; });
+  lo.value = S.lo; hi.value = S.hi;
+  function paintRange() {
+    const n = dims.semester.length - 1;
+    document.getElementById("semVal").textContent = `${dims.semester[S.lo]} – ${dims.semester[S.hi]}`;
+    const f = document.getElementById("semFill");
+    f.style.left = `calc(${(S.lo / n) * 100}% )`;
+    f.style.width = `${((S.hi - S.lo) / n) * 100}%`;
+  }
+  lo.addEventListener("input", () => { S.lo = Math.min(+lo.value, S.hi); lo.value = S.lo; paintRange(); update(); });
+  hi.addEventListener("input", () => { S.hi = Math.max(+hi.value, S.lo); hi.value = S.hi; paintRange(); update(); });
+  paintRange();
+
+  // ---------- 資料篩選 ----------
+  // 欄位索引：0 學期 1 學院 2 系所 3 學位別 4 性別
+  function keep(r) {
+    return r[0] >= S.lo && r[0] <= S.hi
+      && (!S.colleges.size || S.colleges.has(r[1]))
+      && (!S.depts.size || S.depts.has(r[2]))
+      && S.degrees.has(r[3])
+      && (S.gender < 0 || r[4] === S.gender);
+  }
+  // 分開比較時的數列：已選系所 > 已選學院 > 全部學院
+  function groups() {
+    if (S.mode === "sum") return { key: null, list: [{ id: "all", name: "合計" }] };
+    if (S.depts.size) return { key: 2, list: [...S.depts].sort((a, b) => a - b).map((i) => ({ id: "d" + i, name: dims.dept[i], v: i })) };
+    const cs = S.colleges.size ? [...S.colleges].sort((a, b) => a - b) : dims.college.map((_, i) => i);
+    return { key: 1, list: cs.map((i) => ({ id: "c" + i, name: dims.college[i], v: i })) };
+  }
+  function timeSeries(rows, valCol) {
+    const g = groups(), sems = dims.semester.slice(S.lo, S.hi + 1);
+    const series = g.list.map((s) => ({ ...s, data: sems.map(() => 0) }));
+    const pos = new Map(g.list.map((s, i) => [g.key == null ? "all" : s.v, i]));
+    let any = false;
+    for (const r of rows) {
+      if (!keep(r)) continue;
+      const k = g.key == null ? "all" : r[g.key];
+      if (!pos.has(k)) continue;
+      series[pos.get(k)].data[r[0] - S.lo] += r[valCol];
+      any = true;
+    }
+    return { sems, series, any };
+  }
+
+  // ---------- 圖表 ----------
+  if (!hasEcharts) {
+    document.querySelectorAll(".nodata").forEach((n) => { n.textContent = "圖表無法顯示（ECharts 未載入）"; n.classList.add("show"); });
+    return;
+  }
+
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const PALETTE = ["#1f6f78", "#d1793b", "#5b6abf", "#c24b6b", "#6b9b37", "#b08a1e", "#8a5aa8", "#3d8fd1", "#a0522d", "#2f9e8f"];
+  const REASON_COLOR = Object.fromEntries(dims.reason.map((r, i) => [r, PALETTE[i % PALETTE.length]]));
+  const charts = {};
+  const ids = { enr: "cEnr", leave: "cLeave", reason: "cReason", ratio: "cRatio" };
+  for (const [k, id] of Object.entries(ids)) charts[k] = echarts.init(document.getElementById(id));
+  // 只重排尺寸真的變了的那張圖；全部一起 resize 會打斷其他圖正在進行的變形動畫，留下殘影
+  const ro = new ResizeObserver((entries) => entries.forEach((e) => {
+    const c = echarts.getInstanceByDom(e.target), w = Math.round(e.contentRect.width), h = Math.round(e.contentRect.height);
+    if (c && (c.getWidth() !== w || c.getHeight() !== h)) c.resize();
+  }));
+  document.querySelectorAll(".chart").forEach((el) => ro.observe(el));
+
+  function base() {
+    const ink = css("--ink"), muted = css("--muted"), line = css("--line");
+    return {
+      color: PALETTE,
+      textStyle: { fontFamily: getComputedStyle(document.body).fontFamily, color: ink },
+      animationDurationUpdate: 700,
+      animationEasingUpdate: "cubicInOut",
+      tooltip: { backgroundColor: css("--card"), borderColor: line, textStyle: { color: ink } },
+      _axis: {
+        axisLine: { lineStyle: { color: line } }, axisTick: { show: false },
+        axisLabel: { color: muted }, splitLine: { lineStyle: { color: line } },
+        nameTextStyle: { color: muted },
+      },
+    };
+  }
+  function setEmpty(key, empty) {
+    document.getElementById(ids[key]).parentElement.querySelector(".nodata").classList.toggle("show", empty);
+  }
+  // morph=true：切換圖型，整份 option 換掉，靠 universalTransition 做變形
+  // morph=false：篩選改變，只替換數列，讓資料平滑過渡
+  // universalTransition 只在切換圖型時開啟；篩選連續快速改變時若也開著，會殘留上一個圖型的碎片
+  function apply(key, opt, morph) {
+    delete opt._axis;
+    opt.series.forEach((s) => { s.universalTransition = { enabled: morph }; });
+    charts[key].setOption(opt, morph ? { notMerge: true } : { replaceMerge: ["series"] });
+  }
+
+  function lineBar(key, rows, valCol, morph, unitName) {
+    const { sems, series, any } = timeSeries(rows, valCol);
+    setEmpty(key, !any);
+    const b = base(), type = S.types[key], multi = series.length > 1;
+    apply(key, {
+      ...b,
+      grid: { left: 52, right: 16, top: multi ? 64 : 36, bottom: 28 },
+      legend: { show: multi, type: "scroll", top: 0, textStyle: { color: css("--muted") } },
+      tooltip: { ...b.tooltip, trigger: "axis", valueFormatter: (v) => fmt(v) + " 人" },
+      xAxis: { type: "category", data: sems, boundaryGap: type === "bar", ...b._axis, splitLine: { show: false } },
+      yAxis: { type: "value", name: unitName, ...b._axis },
+      series: series.map((s) => ({
+        id: s.id, name: s.name, type, data: s.data,
+        smooth: false, symbolSize: 7, lineStyle: { width: 2.5 },
+        barMaxWidth: 36, emphasis: { focus: "series" },
+      })),
+    }, morph);
+  }
+
+  function renderEnr(morph) { lineBar("enr", D.enrollment.rows, 5, morph, "人"); }
+  function renderLeave(morph) {
+    document.getElementById("leaveSub").textContent = S.metric === "new" ? "各學期「學期間休學」人數" : "各學期「學期底仍在休學狀態」人數";
+    lineBar("leave", D.leave.rows, S.metric === "new" ? 6 : 7, morph, "人");
+  }
+
+  function renderReason(morph) {
+    const col = S.metric === "new" ? 6 : 7;
+    document.getElementById("reasonSub").textContent = (S.metric === "new" ? "學期間休學" : "學期底休學狀態") + "，所選條件合計";
+    const tot = dims.reason.map(() => 0);
+    for (const r of D.leave.rows) if (keep(r)) tot[r[5]] += r[col];
+    const all = tot.map((v, i) => ({ name: dims.reason[i], value: v })).filter((d) => d.value > 0).sort((a, b) => b.value - a.value);
+    const top = all.slice(0, 6), rest = all.slice(6);
+    const data = top.map((d) => ({ ...d, id: d.name, itemStyle: { color: REASON_COLOR[d.name] } }));
+    // 「其餘原因」和資料本身的「其他」分開
+    if (rest.length) data.push({ id: "__rest", name: "其餘原因", value: rest.reduce((s, d) => s + d.value, 0), itemStyle: { color: "#9aa0a6" } });
+    const sum = all.reduce((s, d) => s + d.value, 0);
+    setEmpty("reason", !sum);
+    document.getElementById("reasonNote").textContent = rest.length
+      ? "其餘原因包含：" + rest.map((d) => `${d.name} ${fmt(d.value)} 人`).join("、")
+      : "";
+    const b = base(), type = S.types.reason;
+    const common = { id: "reason", name: "休學原因", data };
+    apply("reason", {
+      ...b,
+      tooltip: { ...b.tooltip, trigger: "item", formatter: (p) => `${p.name}<br>${fmt(p.value)} 人（${sum ? pct(p.value / sum) : "-"}）` },
+      ...(type === "pie"
+        ? { series: [{ ...common, type: "pie", radius: ["38%", "70%"], center: ["50%", "52%"],
+            itemStyle: { borderColor: css("--card"), borderWidth: 2 },
+            label: { color: css("--ink"), formatter: (p) => `${p.name}\n${p.percent}%` } }] }
+        : { grid: { left: 8, right: 48, top: 10, bottom: 24, containLabel: true },
+            xAxis: { type: "value", ...b._axis },
+            yAxis: { type: "category", data: data.map((d) => d.name), inverse: true, ...b._axis, splitLine: { show: false } },
+            series: [{ ...common, type: "bar", barMaxWidth: 26,
+              label: { show: true, position: "right", color: css("--muted"), formatter: (p) => fmt(p.value) } }] }),
+    }, morph);
+  }
+
+  function renderRatio(morph) {
+    const n = dims.dept.length, enr = new Array(n).fill(0), lv = new Array(n).fill(0);
+    for (const r of D.enrollment.rows) if (keep(r)) enr[r[2]] += r[5];
+    for (const r of D.leave.rows) if (keep(r)) lv[r[2]] += r[6];
+    const rows = dims.dept.map((d, i) => ({ name: d, enr: enr[i], lv: lv[i], ratio: enr[i] ? lv[i] / enr[i] : 0 }))
+      .filter((d) => d.enr > 0).sort((a, b) => b.ratio - a.ratio);
+    setEmpty("ratio", !rows.length);
+    const type = S.types.ratio, b = base();
+    const el = document.getElementById("cRatio");
+    const h = type === "bar" ? Math.max(340, rows.length * 22 + 50) : 420;
+    if (el.style.height !== h + "px") { el.style.height = h + "px"; charts.ratio.resize({ animation: { duration: 0 } }); }
+    const maxLv = Math.max(1, ...rows.map((d) => d.lv));
+    const tip = (d) => `${d.name}<br>休學比例 ${pct(d.ratio)}<br>學期間休學 ${fmt(d.lv)} 人／在學 ${fmt(d.enr)} 人`;
+    const byName = new Map(rows.map((d) => [d.name, d]));
+    const common = { id: "ratio", name: "休學比例" };
+    apply("ratio", {
+      ...b,
+      tooltip: { ...b.tooltip, trigger: "item", formatter: (p) => tip(byName.get(p.name) || rows[p.dataIndex]) },
+      ...(type === "bar"
+        ? { grid: { left: 8, right: 64, top: 8, bottom: 24, containLabel: true },
+            xAxis: { type: "value", ...b._axis, axisLabel: { color: css("--muted"), formatter: (v) => (v * 100).toFixed(1) + "%" } },
+            yAxis: { type: "category", data: rows.map((d) => d.name), inverse: true, ...b._axis, splitLine: { show: false },
+              axisLabel: { color: css("--muted"), fontSize: 12, width: 190, overflow: "truncate" } },
+            series: [{ ...common, type: "bar", barMaxWidth: 16, itemStyle: { color: PALETTE[0], borderRadius: [0, 3, 3, 0] },
+              data: rows.map((d) => ({ name: d.name, value: d.ratio })),
+              label: { show: true, position: "right", color: css("--muted"), fontSize: 11, formatter: (p) => pct(p.value) } }] }
+        : { grid: { left: 64, right: 30, top: 30, bottom: 48 },
+            xAxis: { type: "value", name: "在學人數", nameLocation: "middle", nameGap: 28, ...b._axis },
+            yAxis: { type: "value", name: "休學比例", ...b._axis, axisLabel: { color: css("--muted"), formatter: (v) => (v * 100).toFixed(1) + "%" } },
+            series: [{ ...common, type: "scatter",
+              itemStyle: { color: PALETTE[0], opacity: 0.7, borderColor: css("--card"), borderWidth: 1 },
+              symbolSize: (v) => 8 + 40 * Math.sqrt(v[2] / maxLv),
+              data: rows.map((d) => ({ name: d.name, value: [d.enr, d.ratio, d.lv] })),
+              emphasis: { label: { show: true, formatter: (p) => p.name, position: "top", color: css("--ink") } } }] }),
+    }, morph);
+  }
+
+  const renders = { enr: renderEnr, leave: renderLeave, reason: renderReason, ratio: renderRatio };
+  function update() { for (const f of Object.values(renders)) f(false); }
+
+  // 每張卡片右上角的圖型切換鈕
+  const TOGGLES = {
+    enr: [["line", "折線"], ["bar", "長條"]],
+    leave: [["line", "折線"], ["bar", "長條"]],
+    reason: [["pie", "圓餅"], ["bar", "長條"]],
+    ratio: [["bar", "長條"], ["scatter", "散佈"]],
+  };
+  document.querySelectorAll(".toggle").forEach((t) => {
+    const key = t.dataset.card, box = document.createElement("div");
+    box.className = "seg"; t.appendChild(box);
+    seg(box, TOGGLES[key], () => S.types[key], (v) => { S.types[key] = v; renders[key](true); });
+  });
+
+  // 深淺色切換時重畫，讓圖表文字顏色跟著變
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => { for (const f of Object.values(renders)) f(true); });
+
+  update();
+})();
+</script>
+</body>
+</html>
